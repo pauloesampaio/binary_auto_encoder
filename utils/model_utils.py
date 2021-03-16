@@ -28,7 +28,9 @@ def build_model(input_size, latent_dimension, n_filters, filter_sizes, strides):
         keras.Model, keras.Model, keras.Model: Encoder, Decoder and Autoencoder keras models
     """
     input_img = Input(shape=(input_size, input_size, 1))
-    x = Conv2D(32, kernel_size=(4, 4), strides=(2, 2), padding="same")(input_img)
+    x = Conv2D(
+        n_filters[0], kernel_size=filter_sizes[0], strides=strides[0], padding="same"
+    )(input_img)
     x = LeakyReLU(alpha=0.2)(x)
     x = BatchNormalization(axis=-1)(x)
     for n_units, k_size, stride in zip(n_filters[1:], filter_sizes[1:], strides[1:]):
