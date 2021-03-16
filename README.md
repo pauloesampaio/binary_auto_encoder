@@ -2,7 +2,7 @@
 
 ## How to run it
 
-Install requirements on the `requirements.txt` file
+Install requirements on the `requirements.txt` file (`pip install -r requirements.txt`).
 
 Update `config\config.yml` file following this instructions:
 
