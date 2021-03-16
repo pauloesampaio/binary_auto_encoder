@@ -50,7 +50,10 @@ early_stopping = EarlyStopping(
     patience=config["early_stopping_patience"], verbose=2, restore_best_weights=True
 )
 lr_reducer = ReduceLROnPlateau(
-    patience=config["lr_reducer_patience"], factor=0.1, min_lr=0.000001, verbose=2
+    patience=config["lr_reducer_patience"],
+    factor=0.1,
+    min_lr=config["minimum_learning_rate"],
+    verbose=2,
 )
 
 csv_dir = os.path.dirname(config["model_log_path"])
@@ -74,4 +77,4 @@ a.fit(
 )
 
 print(f'Saving model to {config["model_path"]}')
-a.save(config["model_path"])
+a.save(config["save_model_path"])
