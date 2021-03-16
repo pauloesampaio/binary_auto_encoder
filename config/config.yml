@@ -10,7 +10,7 @@ n_filters: [32, 64]
 kernel_size: [[4, 4], [4, 4]]
 strides: [[2, 2], [2, 2]]
 loss: "mean_squared_error"
-initial_learning_rate: 1
+initial_learning_rate: .001
 early_stopping_patience: 10
 lr_reducer_patience: 5
 max_epochs: 100
