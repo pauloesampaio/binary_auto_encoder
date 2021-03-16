@@ -15,6 +15,18 @@ import tensorflow.keras.backend as K
 
 
 def build_model(input_size, latent_dimension, n_filters, filter_sizes, strides):
+    """Builds auto encoder model
+
+    Args:
+        input_size (int): Image input size
+        latent_dimension (int): Dimensionality of latent space
+        n_filters (list): List with number of units by layer
+        filter_sizes (list): List with kernel size of each layer
+        strides (list): List with stride of each layer
+
+    Returns:
+        keras.Model, keras.Model, keras.Model: Encoder, Decoder and Autoencoder keras models
+    """
     input_img = Input(shape=(input_size, input_size, 1))
     x = Conv2D(32, kernel_size=(4, 4), strides=(2, 2), padding="same")(input_img)
     x = LeakyReLU(alpha=0.2)(x)
