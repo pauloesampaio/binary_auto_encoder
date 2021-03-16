@@ -34,7 +34,7 @@ def build_model(input_size, latent_dimension, n_filters, filter_sizes, strides):
     for n_units, k_size, stride in zip(
         n_filters[::-1], filter_sizes[::-1], strides[::-1]
     ):
-        x = Conv2DTranspose(64, (4, 4), strides=(2, 2), padding="same")(x)
+        x = Conv2DTranspose(n_units, k_size, strides=stride, padding="same")(x)
         x = LeakyReLU(alpha=0.2)(x)
         x = BatchNormalization(axis=-1)(x)
     x = Conv2DTranspose(1, (input_size, input_size), padding="same")(x)
