@@ -76,5 +76,5 @@ a.fit(
     callbacks=[early_stopping, lr_reducer, csv_logger],
 )
 
-print(f'Saving model to {config["model_path"]}')
+print(f'Saving model to {config["save_model_path"]}')
 a.save(config["save_model_path"])
