@@ -5,6 +5,7 @@ from utils.model_utils import build_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, CSVLogger
+from sklearn.model_selection import train_test_split
 
 config = yaml_loader("./config/config.yml")
 
@@ -13,15 +14,19 @@ config["save_model_path"]
 print("Loading datasets")
 X, y = load_dataset(config["modified_image_folder"], config["original_image_folder"])
 
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y, test_size=0.2, random_state=12345
+)
+
 print("Tiling images")
 X_tiles = []
-for each_image in X:
+for each_image in X_train:
     current_tiles = generate_tiles(each_image, config["tile_side"], config["step_size"])
     X_tiles = X_tiles + current_tiles
 X_tiles = np.array(X_tiles)
 
 y_tiles = []
-for each_image in y:
+for each_image in y_train:
     current_tiles = generate_tiles(each_image, config["tile_side"], config["step_size"])
     y_tiles = y_tiles + current_tiles
 y_tiles = np.array(y_tiles)
@@ -32,6 +37,7 @@ y_tiles = y_tiles.reshape(y_tiles.shape + (1,))
 augmentator = ImageDataGenerator(
     horizontal_flip=True, vertical_flip=True, validation_split=0.2
 )
+
 train_generator = augmentator.flow(X_tiles, y_tiles, seed=12345, subset="training")
 test_generator = augmentator.flow(X_tiles, y_tiles, seed=12345, subset="validation")
 
