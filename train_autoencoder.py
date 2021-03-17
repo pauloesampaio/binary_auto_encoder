@@ -39,6 +39,7 @@ for each_image in y_train:
     y_tiles = y_tiles + current_tiles
 y_tiles = np.array(y_tiles)
 
+# Reshaping to keras format
 X_tiles = X_tiles.reshape(X_tiles.shape + (1,))
 y_tiles = y_tiles.reshape(y_tiles.shape + (1,))
 
@@ -64,6 +65,7 @@ early_stopping = EarlyStopping(
     patience=config["early_stopping_patience"], verbose=2, restore_best_weights=True
 )
 
+# If CSV and model directories don't exit, create them
 csv_dir = os.path.dirname(config["model_log_path"])
 if not os.path.exists(csv_dir):
     os.mkdir(csv_dir)
@@ -72,6 +74,7 @@ model_dir = os.path.dirname(config["save_model_path"])
 if not os.path.exists(model_dir):
     os.mkdir(model_dir)
 
+# CSV logger to save loss evolution by epoch
 csv_logger = CSVLogger(config["model_log_path"])
 
 print("Training model")
