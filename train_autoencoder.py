@@ -1,10 +1,17 @@
 import os
 import numpy as np
-from utils.io_utils import yaml_loader, load_dataset, generate_tiles
+from utils.io_utils import (
+    yaml_loader,
+    load_dataset,
+    generate_tiles,
+    binarize_tiles,
+    restore_tiles,
+    hamming_distance,
+)
 from utils.model_utils import build_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, CSVLogger
+from tensorflow.keras.callbacks import EarlyStopping, CSVLogger
 from sklearn.model_selection import train_test_split
 
 config = yaml_loader("./config/config.yml")
@@ -14,42 +21,10 @@ config["save_model_path"]
 print("Loading datasets")
 X, y = load_dataset(config["modified_image_folder"], config["original_image_folder"])
 
-X_train, X_val, y_train, y_val = train_test_split(
+X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=12345
 )
 
-# print("Blocking image by binary code size")
-# modified_tiles = []
-# for im in X_train.copy():
-#    tiles = generate_tiles(im, config["binary_code_size"], config["binary_code_size"])
-#    modified_tiles = modified_tiles + tiles
-#
-# original_tiles = []
-# for im in y_train.copy():
-#    tiles = generate_tiles(im, config["binary_code_size"], config["binary_code_size"])
-#    original_tiles = original_tiles + tiles
-#
-# X_train_small = (
-#    np.array(modified_tiles)
-#     .reshape(-1, config["binary_code_size"] * config["binary_code_size"])
-#     .mean(axis=1)
-#     .reshape(
-#         X_train.shape[0],
-#         X_train.shape[1] // config["binary_code_size"],
-#         X_train.shape[1] // config["binary_code_size"],
-#     )
-# )
-#
-# y_train_small = (
-#     np.array(original_tiles)
-#     .reshape(-1, config["binary_code_size"] * config["binary_code_size"])
-#     .mean(axis=1)
-#     .reshape(
-#         y_train.shape[0],
-#         y_train.shape[1] // config["binary_code_size"],
-#         y_train.shape[1] // config["binary_code_size"],
-#     )
-# )
 
 print("Tiling images")
 X_tiles = []
@@ -67,12 +42,12 @@ y_tiles = np.array(y_tiles)
 X_tiles = X_tiles.reshape(X_tiles.shape + (1,))
 y_tiles = y_tiles.reshape(y_tiles.shape + (1,))
 
-augmentator = ImageDataGenerator(
-    horizontal_flip=False, vertical_flip=False, validation_split=0.2
-)
+image_generator = ImageDataGenerator(validation_split=0.2)
 
-train_generator = augmentator.flow(X_tiles, y_tiles, seed=12345, subset="training")
-test_generator = augmentator.flow(X_tiles, y_tiles, seed=12345, subset="validation")
+train_generator = image_generator.flow(X_tiles, y_tiles, seed=12345, subset="training")
+validation_generator = image_generator.flow(
+    X_tiles, y_tiles, seed=12345, subset="validation"
+)
 
 print("Building model")
 e, d, a = build_model(
@@ -88,12 +63,6 @@ a.compile(optimizer=Adam(config["initial_learning_rate"]), loss=config["loss"])
 early_stopping = EarlyStopping(
     patience=config["early_stopping_patience"], verbose=2, restore_best_weights=True
 )
-lr_reducer = ReduceLROnPlateau(
-    patience=config["lr_reducer_patience"],
-    factor=0.1,
-    min_lr=config["minimum_learning_rate"],
-    verbose=2,
-)
 
 csv_dir = os.path.dirname(config["model_log_path"])
 if not os.path.exists(csv_dir):
@@ -108,12 +77,55 @@ csv_logger = CSVLogger(config["model_log_path"])
 print("Training model")
 a.fit(
     train_generator,
-    validation_data=test_generator,
+    validation_data=validation_generator,
     epochs=config["max_epochs"],
     batch_size=config["batch_size"],
     shuffle=True,
-    callbacks=[early_stopping, lr_reducer, csv_logger],
+    callbacks=[early_stopping, csv_logger],
 )
 
 print(f'Saving model to {config["save_model_path"]}')
 a.save(config["save_model_path"])
+
+print("Testing model")
+print("Binarizing modified images from test set")
+binarized_modified_images = []
+for image in X_test.copy():
+    tiles = generate_tiles(
+        image, config["binary_code_size"], config["binary_code_size"]
+    )
+    binarized_tiles = binarize_tiles(tiles, config["binary_level_threshold"])
+    binarized_image = restore_tiles(binarized_tiles)
+    binarized_modified_images.append(binarized_image)
+
+print("Calculating hamming distance for test set")
+benchmark_hamming_distances = []
+for test_image, original_image in zip(binarized_modified_images, y_test):
+    benchmark_hamming_distances.append(hamming_distance(test_image, original_image))
+
+print("Generating model predictions for test set")
+predicted_images = []
+for image in X_test.copy():
+    tiles = np.array(generate_tiles(image, config["tile_side"], config["tile_side"]))
+    predicted_tiles = a.predict(tiles.reshape(tiles.shape + (1,)))
+    predicted_image = restore_tiles(predicted_tiles[:, :, :, 0])
+    predicted_images.append(predicted_image)
+
+print("Binarizing predicted images")
+predicted_binary_images = []
+for image in predicted_images.copy():
+    tiles = generate_tiles(
+        image, config["binary_code_size"], config["binary_code_size"]
+    )
+    binarized_tiles = binarize_tiles(tiles, config["binary_level_threshold"])
+    binarized_image = restore_tiles(binarized_tiles)
+    predicted_binary_images.append(binarized_image)
+
+print("Calculating hamming distance for predicted images")
+model_hamming_distances = []
+for predicted_image, original_image in zip(predicted_binary_images, y_test):
+    model_hamming_distances.append(hamming_distance(predicted_image, original_image))
+
+print("Final metrics:")
+print(f"Original hamming distance: {np.mean(benchmark_hamming_distances)}")
+print(f"Model hamming distance: {np.mean(model_hamming_distances)}")
