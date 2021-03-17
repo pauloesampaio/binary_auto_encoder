@@ -11,7 +11,7 @@ kernel_size: [[3, 3], [3, 3]]
 strides: [[2, 2], [2, 2]]
 loss: "mean_squared_error"
 initial_learning_rate: .001
-early_stopping_patience: 5
+early_stopping_patience: 10
 max_epochs: 100
 batch_size: 32
 binary_level_threshold: 0.5
