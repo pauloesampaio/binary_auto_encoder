@@ -3,11 +3,11 @@ modified_image_folder: "./data/binary_codes/modified/*.bmp"
 save_model_path: "./model/autoencoder.h5"
 model_log_path: "./model/training_log.csv"
 binary_code_size: 6
-tile_side: 32
-step_size: 8
+tile_side: 48
+step_size: 12
 latent_dimension: 64
 n_filters: [32, 64]
-kernel_size: [[4, 4], [4, 4]]
+kernel_size: [[3, 3], [3, 3]]
 strides: [[2, 2], [2, 2]]
 loss: "mean_squared_error"
 initial_learning_rate: .001
